@@ -29,6 +29,22 @@ cd src-tauri && cargo test --lib   # 后端单元测试（解析器、加密、�
 ```
 浏览器预览 UI（不连后端）：`npm run dev` 后打开 `http://localhost:1420/?mock`。
 
+### Windows 本机开发与测试
+安装 Node.js 22.12+、Rust（MSVC 工具链）、Visual Studio 2022 Build Tools 的“使用 C++ 的桌面开发”和 Windows SDK，并安装 WebView2 Runtime。安装后重新打开终端，确认 `cargo --version` 可用。
+
+在项目根目录使用 PowerShell：
+```powershell
+npm ci
+npm run build
+cargo test --lib --locked --manifest-path src-tauri/Cargo.toml
+npm run tauri dev
+# 构建 Windows 安装包
+npm run tauri build -- --bundles nsis,msi
+```
+仅生成可直接运行的正式版：`npm run tauri build -- --no-bundle`，然后双击 `src-tauri\target\release\keybox.exe`。此方式不会安装应用或创建开始菜单快捷方式。
+若 Rust 已安装但当前终端找不到 `cargo`，可临时执行 `$env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"`，然后重试。
+JSON 导入支持 UTF-8（含 BOM）、Windows CRLF 换行及中文文件路径。
+
 ## 打包
 - macOS：`npm run tauri build`（产物在 `src-tauri/target/release/bundle/`）
 - Windows（在 Mac 上交叉编译，仅产出 NSIS `.exe` 安装包）：

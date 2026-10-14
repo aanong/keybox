@@ -153,7 +153,27 @@ fn read_import_file(path: &str) -> AppResult<String> {
     if meta.len() > MAX_IMPORT_BYTES {
         return Err(AppError::Invalid("文件过大（超过 50MB）".into()));
     }
-    Ok(std::fs::read_to_string(path)?)
+    let json = std::fs::read_to_string(path)?;
+    // Windows editors and PowerShell may write UTF-8 JSON with a BOM.
+    Ok(json.strip_prefix('\u{feff}').unwrap_or(&json).to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reads_windows_json_with_bom_and_unicode_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("账号 备份.json");
+        let json = "{\"entries\":[],\"备注\":\"中文\"}\r\n";
+        for prefix in ["", "\u{feff}"] {
+            std::fs::write(&path, format!("{prefix}{json}")).unwrap();
+            let read = read_import_file(path.to_str().unwrap()).unwrap();
+            assert_eq!(read, json);
+            assert!(serde_json::from_str::<serde_json::Value>(&read).is_ok());
+        }
+    }
 }
 
 #[tauri::command]
